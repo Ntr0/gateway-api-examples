@@ -44,3 +44,6 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# created via terraform
+kubeconfig.yaml
