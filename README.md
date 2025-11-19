@@ -11,6 +11,8 @@ This repository contains:
 
 ## Quick Start
 
+**→ See [GETTING_STARTED.md](GETTING_STARTED.md) for a detailed step-by-step guide.**
+
 ### 1. Provision Infrastructure
 
 Create a Kubernetes cluster on IONOS Cloud with two node pools:
