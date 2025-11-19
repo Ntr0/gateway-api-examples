@@ -14,10 +14,15 @@ provider "ionoscloud" {
   # or IONOS_TOKEN
 }
 
+resource "ionoscloud_datacenter" "dc" {
+  location = var.location
+  name = "gateway_api_demo"
+}
+
 resource "ionoscloud_k8s_cluster" "gateway_api_cluster" {
   name        = var.cluster_name
   k8s_version = var.k8s_version
-  location    = var.location
+//  location    = var.location
   
   maintenance_window {
     day_of_the_week = "Sunday"
@@ -26,12 +31,12 @@ resource "ionoscloud_k8s_cluster" "gateway_api_cluster" {
 }
 
 resource "ionoscloud_k8s_node_pool" "loadbalancer" {
-  datacenter_id  = ionoscloud_k8s_cluster.gateway_api_cluster.datacenter_id
+  datacenter_id  = ionoscloud_datacenter.dc.id
   k8s_cluster_id = ionoscloud_k8s_cluster.gateway_api_cluster.id
   name           = "loadbalancer"
   k8s_version    = ionoscloud_k8s_cluster.gateway_api_cluster.k8s_version
-  
-  cpu_family        = var.cpu_family
+
+  server_type = var.serverType
   availability_zone = var.availability_zone
   storage_type      = var.storage_type
   node_count        = 1
@@ -44,23 +49,18 @@ resource "ionoscloud_k8s_node_pool" "loadbalancer" {
     time            = "03:00:00Z"
   }
   
-  auto_scaling {
-    min_node_count = 1
-    max_node_count = 1
-  }
-  
   labels = {
     role = "loadbalancer"
   }
 }
 
 resource "ionoscloud_k8s_node_pool" "service" {
-  datacenter_id  = ionoscloud_k8s_cluster.gateway_api_cluster.datacenter_id
+  datacenter_id  = ionoscloud_datacenter.dc.id
   k8s_cluster_id = ionoscloud_k8s_cluster.gateway_api_cluster.id
   name           = "service"
   k8s_version    = ionoscloud_k8s_cluster.gateway_api_cluster.k8s_version
-  
-  cpu_family        = var.cpu_family
+
+  server_type = var.serverType
   availability_zone = var.availability_zone
   storage_type      = var.storage_type
   node_count        = 2
@@ -73,12 +73,16 @@ resource "ionoscloud_k8s_node_pool" "service" {
     time            = "03:00:00Z"
   }
   
-  auto_scaling {
-    min_node_count = 2
-    max_node_count = 3
-  }
-  
   labels = {
     role = "service"
   }
+}
+
+data "ionoscloud_k8s_cluster" demo {
+  id = ionoscloud_k8s_cluster.gateway_api_cluster.id
+}
+
+resource "local_sensitive_file" "kube_config" {
+  filename = "../kubeconfig.yaml"
+  content = data.ionoscloud_k8s_cluster.demo.kube_config
 }

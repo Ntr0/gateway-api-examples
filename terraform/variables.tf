@@ -7,7 +7,7 @@ variable "cluster_name" {
 variable "k8s_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.28.2"
+  default     = ""
 }
 
 variable "location" {
@@ -16,10 +16,10 @@ variable "location" {
   default     = "de/txl"
 }
 
-variable "cpu_family" {
+variable "serverType" {
   description = "CPU family for nodes"
   type        = string
-  default     = "AMD_OPTERON"
+  default     = "VCPU"
 }
 
 variable "availability_zone" {
@@ -37,5 +37,5 @@ variable "storage_type" {
 variable "storage_size" {
   description = "Storage size in GB for each node"
   type        = number
-  default     = 100
+  default     = 20
 }

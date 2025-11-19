@@ -15,7 +15,7 @@ output "k8s_version" {
 
 output "datacenter_id" {
   description = "Datacenter ID where the cluster is created"
-  value       = ionoscloud_k8s_cluster.gateway_api_cluster.datacenter_id
+  value       = ionoscloud_datacenter.dc.id
 }
 
 output "loadbalancer_node_pool_id" {
