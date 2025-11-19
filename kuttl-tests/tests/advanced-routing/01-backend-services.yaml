@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-v1
+  namespace: advanced-routing-test
+spec:
+  selector:
+    app: service-v1
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-v1
+  namespace: advanced-routing-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: service-v1
+  template:
+    metadata:
+      labels:
+        app: service-v1
+    spec:
+      containers:
+      - name: app
+        image: hashicorp/http-echo:latest
+        args:
+        - "-text=Service V1"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-v2
+  namespace: advanced-routing-test
+spec:
+  selector:
+    app: service-v2
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-v2
+  namespace: advanced-routing-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: service-v2
+  template:
+    metadata:
+      labels:
+        app: service-v2
+    spec:
+      containers:
+      - name: app
+        image: hashicorp/http-echo:latest
+        args:
+        - "-text=Service V2"
+        ports:
+        - containerPort: 8080
