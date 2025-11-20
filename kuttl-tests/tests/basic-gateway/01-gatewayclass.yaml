@@ -1,7 +1,2 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
-  name: example-gateway-class
-spec:
-  controllerName: example.com/gateway-controller
-  description: Example Gateway Class for testing
+# GatewayClass is now created by Terraform
+# See terraform/kubernetes.tf for the envoy-gateway-class definition

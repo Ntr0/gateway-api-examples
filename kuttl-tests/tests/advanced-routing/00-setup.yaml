@@ -3,12 +3,8 @@ kind: Namespace
 metadata:
   name: advanced-routing-test
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
-  name: advanced-gateway-class
-spec:
-  controllerName: example.com/gateway-controller
+# GatewayClass is now created by Terraform
+# See terraform/kubernetes.tf for the envoy-gateway-class definition
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -16,7 +12,7 @@ metadata:
   name: advanced-gateway
   namespace: advanced-routing-test
 spec:
-  gatewayClassName: advanced-gateway-class
+  gatewayClassName: envoy-gateway-class
   listeners:
   - name: http
     protocol: HTTP

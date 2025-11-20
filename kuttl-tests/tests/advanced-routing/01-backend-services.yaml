@@ -26,6 +26,8 @@ spec:
       labels:
         app: service-v1
     spec:
+      nodeSelector:
+        role: service
       containers:
       - name: app
         image: hashicorp/http-echo:latest
@@ -62,6 +64,8 @@ spec:
       labels:
         app: service-v2
     spec:
+      nodeSelector:
+        role: service
       containers:
       - name: app
         image: hashicorp/http-echo:latest

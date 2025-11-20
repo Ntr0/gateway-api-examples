@@ -26,6 +26,8 @@ spec:
       labels:
         app: example-app
     spec:
+      nodeSelector:
+        role: service
       containers:
       - name: app
         image: hashicorp/http-echo:latest
