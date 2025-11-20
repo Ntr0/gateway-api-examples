@@ -1,6 +1,6 @@
 provider helm {
   kubernetes = {
-    config_path = "../kubeconfig.yaml"
+    config_path = local_sensitive_file.kube_config.filename
   }
 }
 
