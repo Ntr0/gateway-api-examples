@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: advanced-routing-test
+status:
+  phase: Active
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: advanced-gateway
+  namespace: advanced-routing-test
