@@ -1,0 +1,45 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rate-limited-route
+  namespace: rate-limiting-test
+spec:
+  parentRefs:
+  - name: rate-limiting-gateway
+    namespace: rate-limiting-test
+  hostnames:
+  - "ratelimit.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: rate-limited-app
+      port: 8080
+      kind: Service
+---
+# RateLimitPolicy for Envoy Gateway
+# Note: This uses Envoy Gateway's RateLimitPolicy CRD
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: RateLimitPolicy
+metadata:
+  name: rate-limit-policy
+  namespace: rate-limiting-test
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: rate-limited-route
+  type: Local
+  local:
+    rules:
+    - clientSelectors:
+      - headers:
+        - name: ":path"
+          value: "/"
+      limit:
+        requests: 5
+        unit: Minute
+
+

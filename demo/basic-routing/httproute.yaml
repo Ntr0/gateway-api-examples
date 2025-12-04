@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: basic-routing
+  namespace: gateway-demos
+spec:
+  parentRefs:
+  - name: basic-routing-gateway
+    namespace: gateway-demos
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: echo-service
+      port: 8080
+      kind: Service
+
+

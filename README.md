@@ -89,6 +89,27 @@ The test suite includes:
     └── README.md       # Test documentation
 ```
 
+## Teardown
+
+To clean up all resources, use the teardown script:
+
+```bash
+# Full teardown (destroys cluster and all resources)
+./teardown.sh
+
+# Keep cluster, only remove Kubernetes resources
+./teardown.sh --keep-cluster
+
+# Skip confirmation prompts
+./teardown.sh --force
+```
+
+The teardown script will:
+1. Clean up all demo resources
+2. Remove GatewayClass and EnvoyProxy configuration
+3. Uninstall Envoy Gateway and Cert-Manager Helm releases
+4. Optionally destroy the Terraform infrastructure (unless `--keep-cluster` is used)
+
 ## License
 
 See [LICENSE](LICENSE) file for details.

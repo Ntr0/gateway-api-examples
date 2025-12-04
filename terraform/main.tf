@@ -4,6 +4,10 @@ terraform {
       source  = "ionos-cloud/ionoscloud"
       version = "~> 6.0"
     }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
   }
   required_version = ">= 1.0"
 }
@@ -52,6 +56,11 @@ resource "ionoscloud_k8s_node_pool" "loadbalancer" {
   labels = {
     role = "loadbalancer"
   }
+  annotations = {}
+  
+  lifecycle {
+    ignore_changes = [annotations]
+  }
 }
 
 resource "ionoscloud_k8s_node_pool" "service" {
@@ -75,6 +84,11 @@ resource "ionoscloud_k8s_node_pool" "service" {
   
   labels = {
     role = "service"
+  }
+  annotations = {}
+  
+  lifecycle {
+    ignore_changes = [annotations]
   }
 }
 

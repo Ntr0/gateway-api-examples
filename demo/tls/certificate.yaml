@@ -1,0 +1,22 @@
+# Certificate resource managed by cert-manager
+# cert-manager will automatically create a Secret named 'tls-cert' 
+# containing the TLS certificate and private key
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tls-cert
+  namespace: gateway-demos
+spec:
+  secretName: tls-cert
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+  - tls.example.com
+  # For Let's Encrypt, uncomment and use:
+  # issuerRef:
+  #   name: letsencrypt-prod
+  #   kind: ClusterIssuer
+  #   group: cert-manager.io
+

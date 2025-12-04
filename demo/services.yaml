@@ -1,0 +1,130 @@
+# Common http-echo services used by all demos
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway-demos
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service
+  namespace: gateway-demos
+spec:
+  selector:
+    app: echo-service
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-service
+  namespace: gateway-demos
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo-service
+  template:
+    metadata:
+      labels:
+        app: echo-service
+    spec:
+      nodeSelector:
+        role: service
+      containers:
+      - name: app
+        image: hashicorp/http-echo:latest
+        args:
+        - "-text=Hello from Gateway API - Echo Service!"
+        - "-listen=:8080"
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service-v1
+  namespace: gateway-demos
+spec:
+  selector:
+    app: echo-service-v1
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-service-v1
+  namespace: gateway-demos
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo-service-v1
+  template:
+    metadata:
+      labels:
+        app: echo-service-v1
+    spec:
+      nodeSelector:
+        role: service
+      containers:
+      - name: app
+        image: hashicorp/http-echo:latest
+        args:
+        - "-text=Service V1 - Weight: 80%"
+        - "-listen=:8080"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service-v2
+  namespace: gateway-demos
+spec:
+  selector:
+    app: echo-service-v2
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-service-v2
+  namespace: gateway-demos
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo-service-v2
+  template:
+    metadata:
+      labels:
+        app: echo-service-v2
+    spec:
+      nodeSelector:
+        role: service
+      containers:
+      - name: app
+        image: hashicorp/http-echo:latest
+        args:
+        - "-text=Service V2 - Weight: 20%"
+        - "-listen=:8080"
+        ports:
+        - containerPort: 8080
+

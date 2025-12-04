@@ -1,0 +1,21 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: advanced-routing-weighted
+  namespace: gateway-demos
+spec:
+  parentRefs:
+  - name: advanced-routing-gateway
+    namespace: gateway-demos
+  hostnames:
+  - "weighted.example.com"
+  rules:
+  - backendRefs:
+    - name: echo-service-v1
+      port: 8080
+      weight: 80
+    - name: echo-service-v2
+      port: 8080
+      weight: 20
+
+
