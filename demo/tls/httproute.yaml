@@ -5,7 +5,7 @@ metadata:
   namespace: gateway-demos
 spec:
   parentRefs:
-  - name: tls-gateway
+  - name: shared-gateway
     namespace: gateway-demos
   hostnames:
   - "tls.example.com"

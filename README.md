@@ -6,51 +6,49 @@ Examples and infrastructure for demonstrating Kubernetes Gateway API functionali
 
 This repository contains:
 
-1. **Terraform Configuration** (`terraform/`): Infrastructure-as-Code to provision a Kubernetes cluster on IONOS Cloud
-2. **KUTTL Tests** (`kuttl-tests/`): Automated tests for Gateway API resources and functionality
+1. **Setup Scripts** (`setup.sh`, `teardown.sh`, `demo.sh`): Main entrypoints for cluster provisioning, cleanup, and running demos
+2. **Demo Examples** (`demo/`): Gateway API demo configurations (basic routing, advanced routing, basic auth, rate limiting, TLS)
+3. **Terraform Configuration** (`terraform/`): Infrastructure-as-Code to provision a Kubernetes cluster on IONOS Cloud
 
 ## Quick Start
 
 **→ See [GETTING_STARTED.md](GETTING_STARTED.md) for a detailed step-by-step guide.**
 
-### 1. Provision Infrastructure
+### 1. Setup Cluster and Gateway
 
-Create a Kubernetes cluster on IONOS Cloud with two node pools:
+Run the setup script to provision the cluster and install Envoy Gateway:
 
 ```bash
-cd terraform
-
 # Configure authentication
 export IONOS_USERNAME="your-username"
 export IONOS_PASSWORD="your-password"
 
-# Initialize and apply
-terraform init
-terraform apply
+# Run setup (provisions cluster, installs cert-manager, Envoy Gateway, and demo services)
+./setup.sh
 ```
 
 **Cluster Configuration:**
 - **Node Pool "loadbalancer"**: 1 node, 2 CPUs, 4 GB RAM
 - **Node Pool "service"**: 2 nodes, 2 CPUs, 4 GB RAM
 
-See [`terraform/README.md`](terraform/README.md) for detailed instructions.
+### 2. Run Demos
 
-### 2. Run Gateway API Tests
-
-Test Gateway API functionality with KUTTL:
+Run Gateway API demos:
 
 ```bash
-# Install Gateway API CRDs
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+# List available demos
+./demo.sh --list
 
-# Install a Gateway controller (e.g., Envoy Gateway, Istio, Kong)
+# Run a specific demo
+./demo.sh basic-routing
+./demo.sh advanced-routing
+./demo.sh basic-auth
+./demo.sh rate-limiting
+./demo.sh tls
 
-# Run tests
-cd kuttl-tests
-kubectl kuttl test
+# Run all demos
+./demo.sh all
 ```
-
-See [`kuttl-tests/README.md`](kuttl-tests/README.md) for detailed test documentation.
 
 ## Components
 
@@ -61,32 +59,33 @@ The Terraform configuration creates:
 - Two node pools optimized for different workloads
 - Configurable cluster settings (version, location, storage)
 
-### KUTTL Tests
-
-The test suite includes:
-- **Basic Gateway Tests**: Fundamental Gateway API concepts
-- **Advanced Routing Tests**: Path-based, header-based, and weighted routing
-
 ## Prerequisites
 
 - IONOS Cloud account
 - Terraform >= 1.0
 - kubectl
-- KUTTL CLI
+- helm
+- curl
 
 ## Repository Structure
 
 ```
 .
-├── terraform/           # Infrastructure as Code for IONOS Cloud
-│   ├── main.tf         # Main Terraform configuration
-│   ├── variables.tf    # Input variables
-│   ├── outputs.tf      # Output values
-│   └── README.md       # Terraform documentation
-└── kuttl-tests/        # Gateway API tests
-    ├── kuttl-test.yaml # Test suite configuration
-    ├── tests/          # Test cases
-    └── README.md       # Test documentation
+├── setup.sh            # Main setup script (provisions cluster, installs Gateway)
+├── teardown.sh         # Teardown script (cleans up resources)
+├── demo.sh             # Demo runner script
+├── demo/               # Gateway API demo configurations
+│   ├── basic-routing/  # Basic HTTP routing demo
+│   ├── advanced-routing/ # Weighted load balancing demo
+│   ├── basic-auth/     # Basic authentication demo
+│   ├── rate-limiting/  # Rate limiting demo
+│   ├── tls/            # TLS/HTTPS termination demo
+│   └── services.yaml   # Demo backend services
+└── terraform/          # Infrastructure as Code for IONOS Cloud
+    ├── main.tf         # Main Terraform configuration
+    ├── variables.tf    # Input variables
+    ├── outputs.tf      # Output values
+    └── README.md       # Terraform documentation
 ```
 
 ## Teardown

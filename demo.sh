@@ -15,6 +15,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KUBECONFIG_FILE="${SCRIPT_DIR}/kubeconfig.yaml"
 DEMO_DIR="${SCRIPT_DIR}/demo"
 NAMESPACE="gateway-demos"
+SHARED_GATEWAY_NAME="shared-gateway"
+SHARED_GATEWAY_ADDRESS=""  # Cached gateway address
 
 # Functions
 print_header() {
@@ -89,25 +91,38 @@ wait_for_gateway() {
     return 1
 }
 
+ensure_shared_gateway() {
+    # Check if shared gateway already exists
+    if kubectl get gateway ${SHARED_GATEWAY_NAME} -n ${NAMESPACE} &>/dev/null; then
+        print_info "Shared gateway already exists, reusing it..."
+    else
+        print_step "Deploying shared gateway..."
+        kubectl apply -f "${DEMO_DIR}/gateway.yaml"
+        wait_for_gateway "${SHARED_GATEWAY_NAME}" "${NAMESPACE}"
+    fi
+    
+    # Cache the gateway address
+    if [ -z "$SHARED_GATEWAY_ADDRESS" ]; then
+        SHARED_GATEWAY_ADDRESS=$(get_gateway_address "${SHARED_GATEWAY_NAME}" "${NAMESPACE}") || {
+            print_error "Failed to get shared Gateway address"
+            return 1
+        }
+        print_success "Shared gateway address: ${SHARED_GATEWAY_ADDRESS}"
+    fi
+}
+
 demo_basic_routing() {
     print_header "Demo: Basic Routing"
     
-    local gateway_name="basic-routing-gateway"
+    ensure_shared_gateway || return 1
     
-    print_step "Deploying basic routing configuration..."
-    kubectl apply -f "${DEMO_DIR}/basic-routing/"
-    wait_for_gateway "${gateway_name}" "${NAMESPACE}"
+    print_step "Deploying basic routing HTTPRoute..."
+    kubectl apply -f "${DEMO_DIR}/basic-routing/httproute.yaml"
     
-    local address
-    address=$(get_gateway_address "${gateway_name}" "${NAMESPACE}") || {
-        print_error "Failed to get Gateway address"
-        return 1
-    }
+    # Give HTTPRoute a moment to be processed
+    sleep 2
     
-    if [ -z "$address" ]; then
-        print_error "Gateway address is empty"
-        return 1
-    fi
+    local address="$SHARED_GATEWAY_ADDRESS"
     
     print_step "Testing basic routing..."
     echo -e "\n${CYAN}Making requests to http://${address}/${NC}"
@@ -132,17 +147,15 @@ demo_basic_routing() {
 demo_advanced_routing() {
     print_header "Demo: Advanced Routing (Weighted Load Balancing)"
     
-    local gateway_name="advanced-routing-gateway"
+    ensure_shared_gateway || return 1
     
-    print_step "Deploying advanced routing configuration..."
-    kubectl apply -f "${DEMO_DIR}/advanced-routing/"
-    wait_for_gateway "${gateway_name}" "${NAMESPACE}"
+    print_step "Deploying advanced routing HTTPRoute..."
+    kubectl apply -f "${DEMO_DIR}/advanced-routing/httproute.yaml"
     
-    local address
-    address=$(get_gateway_address "${gateway_name}" "${NAMESPACE}") || {
-        print_error "Failed to get Gateway address"
-        return 1
-    }
+    # Give HTTPRoute a moment to be processed
+    sleep 2
+    
+    local address="$SHARED_GATEWAY_ADDRESS"
     
     print_step "Testing weighted load balancing (80/20 split)..."
     echo -e "\n${CYAN}Making 20 requests to http://${address}/ (Host: weighted.example.com)${NC}"
@@ -195,20 +208,15 @@ demo_advanced_routing() {
 demo_basic_auth() {
     print_header "Demo: Basic Authentication"
     
-    local gateway_name="basic-auth-gateway"
+    ensure_shared_gateway || return 1
     
-    print_step "Deploying basic auth configuration..."
-    kubectl apply -f "${DEMO_DIR}/basic-auth/"
-    wait_for_gateway "${gateway_name}" "${NAMESPACE}"
+    print_step "Deploying basic auth HTTPRoute and SecurityPolicy..."
+    kubectl apply -f "${DEMO_DIR}/basic-auth/httproute.yaml"
     
     # Wait a bit for SecurityPolicy to be applied
     sleep 5
     
-    local address
-    address=$(get_gateway_address "${gateway_name}" "${NAMESPACE}") || {
-        print_error "Failed to get Gateway address"
-        return 1
-    }
+    local address="$SHARED_GATEWAY_ADDRESS"
     
     print_step "Testing basic authentication..."
     echo -e "\n${CYAN}Test 1: Request without authentication (should fail)${NC}"
@@ -257,20 +265,15 @@ demo_basic_auth() {
 demo_rate_limiting() {
     print_header "Demo: Rate Limiting"
     
-    local gateway_name="rate-limiting-gateway"
+    ensure_shared_gateway || return 1
     
-    print_step "Deploying rate limiting configuration..."
-    kubectl apply -f "${DEMO_DIR}/rate-limiting/"
-    wait_for_gateway "${gateway_name}" "${NAMESPACE}"
+    print_step "Deploying rate limiting HTTPRoute and BackendTrafficPolicy..."
+    kubectl apply -f "${DEMO_DIR}/rate-limiting/httproute.yaml"
     
-    # Wait a bit for RateLimitPolicy to be applied
+    # Wait a bit for BackendTrafficPolicy to be applied
     sleep 5
     
-    local address
-    address=$(get_gateway_address "${gateway_name}" "${NAMESPACE}") || {
-        print_error "Failed to get Gateway address"
-        return 1
-    }
+    local address="$SHARED_GATEWAY_ADDRESS"
     
     print_step "Testing rate limiting (5 requests per minute)..."
     echo -e "\n${CYAN}Making 10 rapid requests to http://${address}/ (Host: ratelimit.example.com)${NC}"
@@ -313,10 +316,6 @@ demo_rate_limiting() {
 demo_tls() {
     print_header "Demo: TLS/HTTPS Termination"
     
-    local gateway_name="tls-gateway"
-    
-    print_step "Deploying TLS configuration with cert-manager..."
-    
     # First, deploy the ClusterIssuer (needs to exist before Certificate)
     print_info "Creating ClusterIssuer..."
     kubectl apply -f "${DEMO_DIR}/tls/issuer.yaml"
@@ -324,9 +323,9 @@ demo_tls() {
     # Wait a moment for ClusterIssuer to be ready
     sleep 2
     
-    # Deploy Certificate, Gateway, and HTTPRoute
-    print_info "Creating Certificate, Gateway, and HTTPRoute..."
-    kubectl apply -f "${DEMO_DIR}/tls/"
+    # Deploy Certificate (needed for HTTPS listener)
+    print_info "Creating Certificate..."
+    kubectl apply -f "${DEMO_DIR}/tls/certificate.yaml"
     
     # Wait for certificate to be issued
     print_info "Waiting for certificate to be issued by cert-manager..."
@@ -348,13 +347,19 @@ demo_tls() {
         print_info "Check certificate status with: kubectl describe certificate tls-cert -n ${NAMESPACE}"
     fi
     
-    wait_for_gateway "${gateway_name}" "${NAMESPACE}"
+    # Ensure shared gateway is deployed (it will pick up the certificate)
+    ensure_shared_gateway || return 1
     
-    local address
-    address=$(get_gateway_address "${gateway_name}" "${NAMESPACE}") || {
-        print_error "Failed to get Gateway address"
-        return 1
-    }
+    # Wait a moment for gateway to pick up the certificate
+    sleep 3
+    
+    print_step "Deploying TLS HTTPRoute..."
+    kubectl apply -f "${DEMO_DIR}/tls/httproute.yaml"
+    
+    # Give HTTPRoute a moment to be processed
+    sleep 2
+    
+    local address="$SHARED_GATEWAY_ADDRESS"
     
     print_step "Testing TLS/HTTPS termination..."
     echo -e "\n${CYAN}Test 1: HTTPS request (self-signed cert, using -k to skip verification)${NC}"
@@ -399,39 +404,43 @@ cleanup_demo() {
     
     case "$demo_name" in
         basic-routing)
-            print_step "Removing basic routing resources..."
-            kubectl delete -f "${DEMO_DIR}/basic-routing/" --ignore-not-found=true
+            print_step "Removing basic routing HTTPRoute..."
+            kubectl delete -f "${DEMO_DIR}/basic-routing/httproute.yaml" --ignore-not-found=true
             ;;
         advanced-routing)
-            print_step "Removing advanced routing resources..."
-            kubectl delete -f "${DEMO_DIR}/advanced-routing/" --ignore-not-found=true
+            print_step "Removing advanced routing HTTPRoute..."
+            kubectl delete -f "${DEMO_DIR}/advanced-routing/httproute.yaml" --ignore-not-found=true
             ;;
         basic-auth)
-            print_step "Removing basic auth resources..."
-            kubectl delete -f "${DEMO_DIR}/basic-auth/" --ignore-not-found=true
+            print_step "Removing basic auth HTTPRoute and SecurityPolicy..."
+            kubectl delete -f "${DEMO_DIR}/basic-auth/httproute.yaml" --ignore-not-found=true
             ;;
         rate-limiting)
-            print_step "Removing rate limiting resources..."
-            kubectl delete -f "${DEMO_DIR}/rate-limiting/" --ignore-not-found=true
+            print_step "Removing rate limiting HTTPRoute and BackendTrafficPolicy..."
+            kubectl delete -f "${DEMO_DIR}/rate-limiting/httproute.yaml" --ignore-not-found=true
             ;;
         tls)
-            print_step "Removing TLS resources..."
-            kubectl delete -f "${DEMO_DIR}/tls/" --ignore-not-found=true
-            # Also delete ClusterIssuer (it's cluster-scoped)
+            print_step "Removing TLS HTTPRoute, Certificate, and ClusterIssuer..."
+            kubectl delete -f "${DEMO_DIR}/tls/httproute.yaml" --ignore-not-found=true
+            kubectl delete -f "${DEMO_DIR}/tls/certificate.yaml" --ignore-not-found=true
             kubectl delete clusterissuer selfsigned-issuer --ignore-not-found=true
             ;;
         all)
-            print_step "Removing all demo resources..."
-            kubectl delete -f "${DEMO_DIR}/basic-routing/" --ignore-not-found=true
-            kubectl delete -f "${DEMO_DIR}/advanced-routing/" --ignore-not-found=true
-            kubectl delete -f "${DEMO_DIR}/basic-auth/" --ignore-not-found=true
-            kubectl delete -f "${DEMO_DIR}/rate-limiting/" --ignore-not-found=true
-            kubectl delete -f "${DEMO_DIR}/tls/" --ignore-not-found=true
+            print_step "Removing all demo HTTPRoutes and policies..."
+            kubectl delete -f "${DEMO_DIR}/basic-routing/httproute.yaml" --ignore-not-found=true
+            kubectl delete -f "${DEMO_DIR}/advanced-routing/httproute.yaml" --ignore-not-found=true
+            kubectl delete -f "${DEMO_DIR}/basic-auth/httproute.yaml" --ignore-not-found=true
+            kubectl delete -f "${DEMO_DIR}/rate-limiting/httproute.yaml" --ignore-not-found=true
+            kubectl delete -f "${DEMO_DIR}/tls/httproute.yaml" --ignore-not-found=true
+            kubectl delete -f "${DEMO_DIR}/tls/certificate.yaml" --ignore-not-found=true
             kubectl delete clusterissuer selfsigned-issuer --ignore-not-found=true
+            print_step "Removing shared gateway..."
+            kubectl delete -f "${DEMO_DIR}/gateway.yaml" --ignore-not-found=true
             ;;
         services)
-            print_step "Removing demo services..."
+            print_step "Removing demo services and shared gateway..."
             kubectl delete -f "${DEMO_DIR}/services.yaml" --ignore-not-found=true
+            kubectl delete -f "${DEMO_DIR}/gateway.yaml" --ignore-not-found=true
             ;;
         *)
             print_error "Unknown demo: $demo_name"
@@ -576,6 +585,12 @@ main() {
             demo_tls
             ;;
         all)
+            # Ensure shared gateway is set up once before running all demos
+            ensure_shared_gateway || {
+                print_error "Failed to set up shared gateway"
+                exit 1
+            }
+            echo ""
             demo_basic_routing
             echo ""
             demo_advanced_routing

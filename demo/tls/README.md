@@ -7,8 +7,10 @@ This demo demonstrates TLS/HTTPS termination using Gateway API with certificates
 The demo uses:
 - A **ClusterIssuer** (self-signed for demo, Let's Encrypt example provided)
 - A **Certificate** resource that cert-manager uses to generate TLS certificates
-- A **Gateway** with an HTTPS listener that references the certificate Secret
+- The **shared Gateway** (`shared-gateway`) with an HTTPS listener (port 443) that references the certificate Secret
 - An **HTTPRoute** that routes HTTPS traffic to the backend service
+
+**Note**: This demo uses the shared gateway that is reused across all demos. The gateway includes both HTTP (port 80) and HTTPS (port 443) listeners.
 
 ## Certificate Management
 

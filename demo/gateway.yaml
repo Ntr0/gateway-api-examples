@@ -1,7 +1,9 @@
+# Shared Gateway for all demos
+# This gateway is reused across all demo scenarios to reduce setup time
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: tls-gateway
+  name: shared-gateway
   namespace: gateway-demos
 spec:
   gatewayClassName: envoy-gateway-class

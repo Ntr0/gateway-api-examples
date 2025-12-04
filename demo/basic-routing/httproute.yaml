@@ -5,7 +5,7 @@ metadata:
   namespace: gateway-demos
 spec:
   parentRefs:
-  - name: basic-routing-gateway
+  - name: shared-gateway
     namespace: gateway-demos
   rules:
   - matches:

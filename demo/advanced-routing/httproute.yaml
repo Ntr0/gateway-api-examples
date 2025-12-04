@@ -5,7 +5,7 @@ metadata:
   namespace: gateway-demos
 spec:
   parentRefs:
-  - name: advanced-routing-gateway
+  - name: shared-gateway
     namespace: gateway-demos
   hostnames:
   - "weighted.example.com"

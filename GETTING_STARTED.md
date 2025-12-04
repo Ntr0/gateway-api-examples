@@ -9,7 +9,8 @@ Before you begin, ensure you have:
 - [ ] An IONOS Cloud account with API access
 - [ ] Terraform >= 1.0 installed ([Download](https://www.terraform.io/downloads))
 - [ ] kubectl installed ([Install Guide](https://kubernetes.io/docs/tasks/tools/))
-- [ ] KUTTL CLI installed ([Install Guide](https://kuttl.dev/docs/cli.html))
+- [ ] helm installed ([Install Guide](https://helm.sh/docs/intro/install/))
+- [ ] curl installed (usually pre-installed on Linux/macOS)
 
 ## Step 1: Clone the Repository
 
@@ -135,76 +136,53 @@ Wait for the controller to be ready:
 kubectl wait --for=condition=ready pod -l control-plane=envoy-gateway -n envoy-gateway-system --timeout=300s
 ```
 
-## Step 5: Run KUTTL Tests
+## Step 5: Run Demos
 
-Navigate to the kuttl-tests directory:
-
-```bash
-cd ../kuttl-tests
-```
-
-### Run All Tests
+Run Gateway API demos to see different features in action:
 
 ```bash
-kubectl kuttl test
-```
+# List available demos
+./demo.sh --list
 
-### Run Specific Test
+# Run a specific demo
+./demo.sh basic-routing
+./demo.sh advanced-routing
+./demo.sh basic-auth
+./demo.sh rate-limiting
+./demo.sh tls
 
-```bash
-# Basic Gateway test
-kubectl kuttl test --test basic-gateway
-
-# Advanced routing test
-kubectl kuttl test --test advanced-routing
-```
-
-### Run with Verbose Output
-
-```bash
-kubectl kuttl test -v 5
+# Run all demos
+./demo.sh all
 ```
 
 ## Step 6: Explore the Results
 
-After successful test execution, you can examine the created resources:
-
-### Basic Gateway Test
+After running demos, you can examine the created resources:
 
 ```bash
-# View resources
-kubectl get gateway,httproute,service,deployment -n gateway-api-test
+# View Gateway and HTTPRoutes
+kubectl get gateway,httproute -n gateway-demos
 
-# Test the application
-kubectl port-forward -n gateway-api-test svc/example-app 8080:80
-curl http://localhost:8080
-```
+# View demo services
+kubectl get service,deployment -n gateway-demos
 
-### Advanced Routing Test
-
-```bash
-# View resources
-kubectl get gateway,httproute,service,deployment -n advanced-routing-test
-
-# Check weighted routing
-kubectl describe httproute weighted-routing -n advanced-routing-test
+# Get Gateway address
+kubectl get gateway shared-gateway -n gateway-demos -o jsonpath='{.status.addresses[0].value}'
 ```
 
 ## Cleanup
 
-### Clean up test resources
+### Clean up demo resources
 
 ```bash
-# Tests are automatically cleaned up by KUTTL
-# To manually clean up:
-kubectl delete namespace gateway-api-test advanced-routing-test
-```
+# Clean up specific demo
+./demo.sh --cleanup basic-routing
 
-### Destroy Infrastructure
+# Clean up all demos
+./demo.sh --cleanup all
 
-```bash
-cd terraform
-terraform destroy
+# Clean up everything including cluster
+./teardown.sh
 ```
 
 When prompted, type `yes` to confirm.
@@ -234,12 +212,6 @@ kubectl get pods -A | grep gateway
 kubectl logs -n <controller-namespace> <controller-pod>
 ```
 
-### Issue: KUTTL tests timeout
-
-**Solution:** Increase timeout in `kuttl-test.yaml`:
-```yaml
-timeout: 600  # Increase from 300 to 600 seconds
-```
 
 ### Issue: Nodes not ready
 
@@ -251,7 +223,7 @@ kubectl get nodes -w
 ## Next Steps
 
 - Explore the [Terraform configuration](terraform/README.md)
-- Review the [KUTTL test documentation](kuttl-tests/README.md)
+- Review the demo configurations in the [`demo/`](demo/) directory
 - Learn more about [Gateway API](https://gateway-api.sigs.k8s.io/)
 - Experiment with additional Gateway API features
 
